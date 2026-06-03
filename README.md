@@ -5,7 +5,7 @@
 It includes an intuitive GUI and graph visualizations, making it both educational and practical for users interested in combinatorial optimization problems.
 
 ---
-
+ 
 ## 🧠 Problem Overview – What is TSP?
 
 The **Traveling Salesman Problem (TSP)** is a classic NP-hard problem in computer science.  
