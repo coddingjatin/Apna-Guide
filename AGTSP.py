@@ -33,8 +33,76 @@ class WelcomeWindow(tk.Frame):
         self.greet_button = tk.Button(self.master, text="Guide", command=self.greet_user, font=("Algerian", 14))
         self.greet_button.pack(side="top", pady=10)
 
-        self.close_button = tk.Button(self.master, text="Show Path", command=self.master.destroy, font=("Algerian", 14))
+        # Connected to show_path method instead of destroying the window
+        self.close_button = tk.Button(self.master, text="Show Path", command=self.show_path, font=("Algerian", 14))
         self.close_button.pack(side="top", padx=10, pady=10)
+
+    # Handles Show Path button click - will display TSP path on graph
+    def show_path(self):
+        valid_cities = ['Mumbai', 'Pune', 'Thane', 'Delhi']
+        name = self.name_entry.get()
+        if name in valid_cities:
+            # Create a graph
+            G = nx.Graph()
+
+            # Add nodes with coordinates as attributes
+            G.add_node('Mumbai', pos=(0, 0),node_color='red')
+            G.add_node('Pune', pos=(1, 2))
+            G.add_node('Thane', pos=(3, 1))
+            G.add_node('Delhi', pos=(2, 3))
+
+            # Add edges with weights as attributes
+            G.add_edge('Mumbai', 'Pune', weight=120)
+            G.add_edge('Mumbai', 'Thane', weight=15)
+            G.add_edge('Mumbai', 'Delhi', weight=400)
+            G.add_edge('Pune', 'Thane', weight=90)
+            G.add_edge('Pune', 'Delhi', weight=250)
+            G.add_edge('Thane', 'Delhi', weight=305)
+
+            # Draw the graph
+            pos = nx.get_node_attributes(G, 'pos')
+            nx.draw(G, pos, with_labels=True, node_size=5000, font_size=15, font_color='white')
+
+            edge_labels = nx.get_edge_attributes(G, 'weight')
+            nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=15)
+
+            # Find approximate solution using nearest neighbor heuristic
+            start_node = 'Mumbai'
+            path = [start_node]
+            visited = {node: False for node in G.nodes}
+            visited[start_node] = True
+
+            while len(path) < G.number_of_nodes():
+                current_node = path[-1]
+                min_dist = float('inf')
+                next_node = None
+                for neighbor in G.neighbors(current_node):
+                    if not visited[neighbor] and G[current_node][neighbor]['weight'] < min_dist:
+                        min_dist = G[current_node][neighbor]['weight']
+                        next_node = neighbor
+                path.append(next_node)
+                visited[next_node] = True
+
+            path.append(start_node)
+
+            #Trim path to stop at the destination city
+            dest_index = path.index(name)
+            trimmed_path = path[:dest_index+1]
+
+            # Calculate total distance of the path
+            total_distance = sum(G[trimmed_path[i]][trimmed_path[i+1]]['weight'] for i in range(len(trimmed_path)-1))
+
+            # Show the plot
+            path_edges = list(zip(trimmed_path[:-1], trimmed_path[1:]))
+
+            nx.draw_networkx_edges(G, pos, edgelist=path_edges, edge_color='red', width=3)
+            plt.suptitle(f"Path: {' → '.join(trimmed_path)} | Distance: {total_distance} km", fontsize=10, y=0.98, x=0.02, ha='left')
+            plt.subplots_adjust(top=0.75)
+            plt.tight_layout()
+            plt.show()
+        else:
+            error = "Invalid City name!"
+            self.label.config(text=error)
 
     def greet_user(self):
         name = self.name_entry.get()
@@ -57,56 +125,3 @@ app = WelcomeWindow(master=root)
 # Run the main loop
 app.mainloop()
 
-# Create a graph
-G = nx.Graph()
-
-# Add nodes with coordinates as attributes
-G.add_node('Mumbai', pos=(0, 0),node_color='red')
-G.add_node('Pune', pos=(1, 2))
-G.add_node('Thane', pos=(3, 1))
-G.add_node('Delhi', pos=(2, 3))
-
-# Add edges with weights as attributes
-G.add_edge('Mumbai', 'Pune', weight=120)
-G.add_edge('Mumbai', 'Thane', weight=15)
-G.add_edge('Mumbai', 'Delhi', weight=400)
-G.add_edge('Pune', 'Thane', weight=90)
-G.add_edge('Pune', 'Delhi', weight=250)
-G.add_edge('Thane', 'Delhi', weight=305)
-
-# Draw the graph
-pos = nx.get_node_attributes(G, 'pos')
-nx.draw(G, pos, with_labels=True, node_size=5000, font_size=15, font_color='white')
-edge_labels = nx.get_edge_attributes(G, 'weight')
-nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=15)
-
-# Find approximate solution using nearest neighbor heuristic
-start_node = 'Mumbai'
-path = [start_node]
-visited = {node: False for node in G.nodes}
-visited[start_node] = True
-
-while len(path) < G.number_of_nodes():
-    current_node = path[-1]
-    min_dist = float('inf')
-    next_node = None
-    for neighbor in G.neighbors(current_node):
-        if not visited[neighbor] and G[current_node][neighbor]['weight'] < min_dist:
-            min_dist = G[current_node][neighbor]['weight']
-            next_node = neighbor
-    path.append(next_node)
-    visited[next_node] = True
-
-path.append(start_node)
-
-# Calculate total distance of the path
-total_distance = sum(G[path[i]][path[i+1]]['weight'] for i in range(len(path)-1))
-
-# Print the approximate solution
-print("Approximate TSP solution using nearest neighbor:")
-print("Path: ", path)
-print("Total Distance: ", total_distance)
-
-# Show the plot
-plt.title("Traveling Salesperson Problem")
-plt.show()
